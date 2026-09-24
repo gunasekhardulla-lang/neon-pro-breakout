@@ -1,0 +1,8 @@
+{
+  "name": "Neon Breakout",
+  "description": "A vibrant, polished retro-neon arcade breakout game built with HTML5 Canvas, responsive controls, power-ups, multiple levels, particle effects, and Web Audio API synthesized sound.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

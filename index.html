@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Neon Breakout</title>
+  <meta name="description" content="A vibrant, polished retro-neon arcade breakout game built with HTML5 Canvas, responsive controls, power-ups, multiple levels, particle effects, and Web Audio API synthesized sound.">
+  <meta property="og:title" content="Neon Breakout">
+  <meta property="og:description" content="A vibrant, polished retro-neon arcade breakout game built with HTML5 Canvas, responsive controls, power-ups, multiple levels, particle effects, and Web Audio API synthesized sound.">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <!-- Ambient background decorative layers -->
+  <div class="synth-grid" aria-hidden="true"></div>
+  <div class="ambient-glow" aria-hidden="true"></div>
+
+  <main class="game-wrapper">
+    <!-- Top In-Game HUD -->
+    <header class="hud-bar" role="toolbar" aria-label="Game Status and Controls">
+      <div class="hud-group">
+        <div class="hud-item">
+          <span class="hud-label">Score</span>
+          <span id="hud-score" class="hud-value cyan">0</span>
+        </div>
+        <div class="hud-item">
+          <span class="hud-label">Best</span>
+          <span id="hud-best" class="hud-value yellow">0</span>
+        </div>
+      </div>
+
+      <div class="hud-group">
+        <div class="hud-item" style="align-items: center;">
+          <span class="hud-label">Level</span>
+          <span id="hud-level" class="hud-value magenta">1</span>
+        </div>
+        <!-- Active Power-up Timers Container -->
+        <div id="active-powerups" class="active-powerups-hud" aria-live="polite"></div>
+      </div>
+
+      <div class="hud-group">
+        <div class="hud-item">
+          <span class="hud-label">Lives</span>
+          <div id="hud-lives" class="lives-container" aria-label="Remaining Lives">
+            <span class="life-icon"></span>
+            <span class="life-icon"></span>
+            <span class="life-icon"></span>
+          </div>
+        </div>
+        <button id="btn-audio-toggle" class="hud-btn" aria-label="Toggle Sound" title="Toggle Sound">🔊</button>
+        <button id="btn-pause" class="hud-btn" aria-label="Pause Game" title="Pause Game (P)">⏸</button>
+      </div>
+    </header>
+
+    <!-- Canvas Game Arena Viewport -->
+    <div class="canvas-container" id="canvas-container">
+      <canvas id="gameCanvas" width="800" height="600" aria-label="Neon Breakout Game Board"></canvas>
+
+      <!-- Transient notification toast -->
+      <div id="toast-banner" class="toast-banner" aria-live="polite"></div>
+
+      <!-- Large 3-2-1 Countdown Overlay -->
+      <div id="countdown-display" class="countdown-overlay" aria-live="assertive">3</div>
+
+      <!-- Screen: Title & Start Screen -->
+      <section id="screen-title" class="overlay-screen">
+        <h1 class="game-title">Neon Breakout</h1>
+        <p class="subtitle">Arcade Synthwave Brick Breaker</p>
+
+        <div class="instructions-card">
+          <div class="instructions-grid">
+            <div class="instruction-item">
+              <span class="instruction-key">← / → or A / D</span>
+              <span>Move Paddle</span>
+            </div>
+            <div class="instruction-item">
+              <span class="instruction-key">Mouse / Touch</span>
+              <span>Drag Paddle</span>
+            </div>
+            <div class="instruction-item">
+              <span class="instruction-key">SPACE / Click</span>
+              <span>Launch Ball & Fire</span>
+            </div>
+            <div class="instruction-item">
+              <span class="instruction-key">P / ESC</span>
+              <span>Pause / Resume</span>
+            </div>
+          </div>
+
+          <!-- Power-up visual guide -->
+          <div class="powerups-legend">
+            <div class="legend-pill"><span class="legend-badge cyan">W</span> Wider</div>
+            <div class="legend-pill"><span class="legend-badge magenta">M</span> Multi-Ball</div>
+            <div class="legend-pill"><span class="legend-badge purple">S</span> Slow</div>
+            <div class="legend-pill"><span class="legend-badge orange">L</span> Lasers</div>
+            <div class="legend-pill"><span class="legend-badge yellow">F</span> Fireball</div>
+            <div class="legend-pill"><span class="legend-badge green">+</span> +1 Life</div>
+          </div>
+        </div>
+
+        <button id="btn-start-game" class="btn-primary" autofocus>
+          ▶ Play Game
+        </button>
+      </section>
+
+      <!-- Screen: Pause Menu -->
+      <section id="screen-pause" class="overlay-screen hidden" aria-label="Pause Menu">
+        <h2 class="game-title" style="font-size: 2.2rem;">Paused</h2>
+        <p class="subtitle">Game suspended</p>
+        <button id="btn-resume" class="btn-primary">▶ Resume Game</button>
+        <button id="btn-restart-pause" class="btn-secondary">↺ Restart</button>
+      </section>
+
+      <!-- Screen: Level Cleared -->
+      <section id="screen-level-clear" class="overlay-screen hidden" aria-label="Level Complete">
+        <h2 class="game-title" style="font-size: 2.3rem;">Level Cleared!</h2>
+        <p class="subtitle">Sector <span id="clear-level-num">1</span> Defeated</p>
+        <div class="new-record-tag" id="clear-bonus-pts">+1,250 BONUS</div>
+        <button id="btn-next-level" class="btn-primary">Next Level ▶</button>
+      </section>
+
+      <!-- Screen: Game Over -->
+      <section id="screen-game-over" class="overlay-screen hidden" aria-label="Game Over">
+        <h2 class="game-title" style="font-size: 2.4rem; color: var(--neon-magenta);">Game Over</h2>
+        <div id="gameover-record-tag" class="new-record-tag" style="display: none;">★ NEW HIGH SCORE! ★</div>
+        <div class="modal-stats">
+          <div class="stat-box">
+            <span class="stat-label">Final Score</span>
+            <span id="gameover-score" class="stat-val">0</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Best Record</span>
+            <span id="gameover-best" class="stat-val" style="color: var(--neon-yellow);">0</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Bricks Hit</span>
+            <span id="gameover-bricks" class="stat-val" style="color: var(--neon-magenta);">0</span>
+          </div>
+        </div>
+        <button id="btn-retry-gameover" class="btn-primary">↺ Play Again</button>
+      </section>
+
+      <!-- Screen: Victory (All Levels Completed) -->
+      <section id="screen-victory" class="overlay-screen hidden" aria-label="Victory">
+        <h2 class="game-title" style="font-size: 2.4rem;">Victory!</h2>
+        <p class="subtitle">You conquered all 5 neon sectors!</p>
+        <div class="modal-stats">
+          <div class="stat-box">
+            <span class="stat-label">Total Score</span>
+            <span id="victory-score" class="stat-val">0</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-label">Bricks Cleared</span>
+            <span id="victory-bricks" class="stat-val" style="color: var(--neon-green);">0</span>
+          </div>
+        </div>
+        <button id="btn-play-again-victory" class="btn-primary">★ Play Again</button>
+      </section>
+    </div>
+
+    <!-- Mobile Quick Touch Bar -->
+    <div class="touch-bar">
+      <button id="btn-touch-action" class="touch-btn" aria-label="Launch Ball or Fire Lasers">
+        ⚡ Launch / Fire
+      </button>
+    </div>
+  </main>
+
+  <!-- Game Logic Entry -->
+  <script src="./script.js"></script>
+</body>
+</html>
